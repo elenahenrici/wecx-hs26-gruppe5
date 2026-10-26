@@ -26,6 +26,7 @@ h1 {
 }
 
 .matrix {
+    --color: #555;
     border-collapse: collapse;
     font-size: .9rem;
 }
