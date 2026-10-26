@@ -1,1 +1,174 @@
-/* Styles for the table sketch (Larissa) */
+/* Styles for the table sketch (Larissa).
+   Same direction as the timeline: white background, thin lines, regular weights,
+   IBM Plex Sans for text and IBM Plex Mono for years, one pigment colour per artist. */
+
+body {
+    font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 400;
+    background: #fff;
+    color: #1a1a1a;
+}
+
+h1 {
+    font-size: 1.6rem;
+    font-weight: 500;
+    margin-bottom: .25rem;
+}
+
+.hint {
+    color: #666;
+    max-width: 46rem;
+}
+
+/* on small screens the table scrolls sideways, not the whole page */
+.matrix-form {
+    overflow-x: auto;
+}
+
+.matrix {
+    border-collapse: collapse;
+    font-size: .9rem;
+}
+
+/* ---------- headers ---------- */
+
+.matrix th {
+    font-weight: 400;
+    text-align: left;
+    padding: .5rem .75rem;
+}
+
+.matrix th strong {
+    display: block;
+    font-weight: 500;
+}
+
+.matrix th small {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    color: #888;
+}
+
+.matrix thead th {
+    vertical-align: bottom;
+    text-align: center;
+    min-width: 6.5rem;
+    border-bottom: 1px solid #ccc;
+}
+
+.matrix thead th.corner {
+    text-align: left;
+    min-width: 10rem;
+    font-size: .75rem;
+    color: #888;
+}
+
+.matrix thead .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-bottom: .2rem;
+    border-radius: 50%;
+    background: var(--color);
+}
+
+.matrix thead th.active-col {
+    box-shadow: inset 0 -2px 0 #1a1a1a;
+}
+
+.matrix tbody th {
+    white-space: nowrap;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.matrix tr.unassigned th strong {
+    color: #888;
+}
+
+/* ---------- cells ---------- */
+
+.matrix td {
+    height: 3rem;
+    padding: 0;
+    text-align: center;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+}
+
+/* crosshair: the active row and column get a light background */
+.matrix tr:hover > *,
+.matrix tr.active-row > *,
+.matrix td.active-col {
+    background: #fafafa;
+}
+
+.matrix td:focus-visible {
+    outline: 2px solid #1a1a1a;
+    outline-offset: -2px;
+}
+
+/* the small square in each cell */
+.mark {
+    display: inline-grid;
+    place-items: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    transition: background .15s, border-color .15s;
+}
+
+td:hover .mark {
+    border-color: var(--color, #1a1a1a);
+}
+
+td[aria-selected="true"] .mark {
+    background: var(--color);
+    border-color: var(--color);
+}
+
+td[aria-selected="true"] .mark::after {
+    content: "✓";
+    color: #fff;
+    font-size: .85rem;
+    line-height: 1;
+}
+
+/* ---------- N/A column ---------- */
+
+.matrix .na {
+    border-left: 1px solid #eee;
+}
+
+td.na .mark {
+    width: auto;
+    padding: 0 .4rem;
+    border-style: dashed;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    color: #bbb;
+}
+
+td.na[aria-selected="true"] .mark {
+    background: none;
+    border-style: solid;
+    border-color: #1a1a1a;
+    color: #1a1a1a;
+}
+
+td.na[aria-selected="true"] .mark::after {
+    content: none;
+}
+
+/* ---------- below the table ---------- */
+
+.summary {
+    margin-top: .75rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .75rem;
+    color: #888;
+}
+
+.debug {
+    font-family: "IBM Plex Mono", monospace;
+}
