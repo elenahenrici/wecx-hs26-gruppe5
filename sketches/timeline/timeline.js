@@ -194,9 +194,15 @@ const renderPalette = () => {
         const item = document.createElement("li");
         item.dataset.id = work.id;
         item.style.setProperty("--color", colorOf(artist.id));
+        // only a paint blob is visible, the details appear on hover or keyboard focus
         item.innerHTML = `
-            <button type="button" class="chip" aria-label="${work.label} entfernen">
-                <span class="dot"></span>${work.label}<small>${artist.label} · ${work.year}</small><span class="x">✕</span>
+            <button type="button" class="blob" aria-label="${work.label}, ${artist.label}, ${work.year}. Entfernen">
+                <span class="dot"></span>
+                <span class="info" aria-hidden="true">
+                    <strong>${work.label}</strong>
+                    <span>${artist.label} · ${work.year}</span>
+                    <em>Klicken zum Entfernen</em>
+                </span>
             </button>`;
         item.querySelector("button").onclick = () => fallOutOfPalette(item, work.id);
         return item;
