@@ -3,7 +3,8 @@
  *
  * Assigns ARTISTS to ARTWORKS:
  *  - rows = artworks, columns = artists, a checked cell means "assigned"
- *  - each row is its own multi selection of artists (like one <select multiple> per artwork)
+ *  - each row works like a radio group: at most ONE artist per artwork.
+ *    Clicking another artist replaces the current one, clicking the same artist removes it.
  *  - last column "N/A": marked when an artwork has no artist, clicking it clears the row
  *  - keyboard: Tab into the table, arrow keys move between cells,
  *    Home/End jump to the start/end of the row, Space/Enter toggles
@@ -34,9 +35,10 @@ const NA_COL = columns.length;   // index of the extra "N/A" column at the end
 
 // ---------- model ----------
 
-// one model per artwork, pre-filled with the existing assignments
+// one model per artwork, pre-filled with the existing assignments.
+// max: 1 = safety net, the model never accepts a second artist
 const models = new Map(artworks.map(work => {
-    const model = MultiSelect({name: `artists-of-${work.id}`, options: artists});
+    const model = MultiSelect({name: `artists-of-${work.id}`, options: artists, max: 1});
     artistsOfArtwork(work.id).forEach(artist => model.select(artist.id));
     return [work.id, model];
 }));
@@ -84,10 +86,10 @@ headRow.append(...headers);
 
 const updateSummary = () => {
     const values = [...models.values()].map(model => model.getValue());
-    const assigned = values.reduce((sum, value) => sum + value.length, 0);
     const unassigned = values.filter(value => value.length === 0).length;
+    const assigned = artworks.length - unassigned;
     summary.textContent =
-        `${artworks.length} Kunstwerke · ${columns.length} Künstler:innen · ${assigned} Zuordnungen · ${unassigned} ohne Künstler:in`;
+        `${artworks.length} Kunstwerke · ${assigned} mit Künstler:in · ${unassigned} ohne Künstler:in (N/A)`;
 };
 
 // ---------- rows: one per artwork ----------
@@ -154,9 +156,15 @@ debugArea.append(...debugPanels);
 const activate = (row, col) => {
     const model = modelOfRow(row);
     if (col === NA_COL) {
-        model.clear();                         // N/A: remove all artists of this artwork
+        model.clear();                         // N/A: remove the artist of this artwork
+        return;
+    }
+    const artistId = columns[col].id;
+    if (model.isSelected(artistId)) {
+        model.deselect(artistId);              // same artist again: remove it, N/A becomes active
     } else {
-        model.toggle(columns[col].id);         // artist: assign / unassign
+        model.clear();                         // other artist: first remove the current one ...
+        model.select(artistId);                // ... then set the new one (like a radio button)
     }
 };
 

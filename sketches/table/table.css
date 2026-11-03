@@ -26,7 +26,7 @@ h1 {
 }
 
 .matrix {
-    --color: #555;
+    --color: #555; /* default, table.js sets the real colour per artist */
     border-collapse: collapse;
     font-size: .9rem;
 }
@@ -108,14 +108,14 @@ h1 {
     outline-offset: -2px;
 }
 
-/* the small square in each cell */
+/* the small circle in each cell (round = only one choice, like a radio button) */
 .mark {
     display: inline-grid;
     place-items: center;
     width: 1.4rem;
     height: 1.4rem;
     border: 1px solid #ccc;
-    border-radius: 2px;
+    border-radius: 50%;
     transition: background .15s, border-color .15s;
 }
 
