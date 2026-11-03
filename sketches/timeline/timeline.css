@@ -2,6 +2,9 @@
    Direction: simple and quiet. White background, thin lines, regular weights,
    IBM Plex Sans for text and IBM Plex Mono for years. Rough on purpose, this is a technical sketch. */
 
+/* "hidden" must always win, also over display: flex / inline-flex below (toast, "+" tab) */
+[hidden] { display: none !important; }
+
 body {
     font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
     font-weight: 400;
@@ -12,7 +15,7 @@ body {
 h1 { font-size: 1.6rem; font-weight: 500; margin-bottom: .25rem; }
 .hint { color: #666; max-width: 46rem; }
 
-.filter h2, .palette h2 {
+.epoch-label h2, .palette h2 {
     font-size: .8rem;
     font-weight: 500;
     color: #666;
@@ -21,27 +24,78 @@ h1 { font-size: 1.6rem; font-weight: 500; margin-bottom: .25rem; }
 
 .timeline {
     display: grid;
-    grid-template-columns: 8rem 1fr;
-    gap: 2rem;
     max-width: 1000px;
 }
 
-/* ---------- epoch filter ---------- */
+/* ---------- epochs above the timeline ---------- */
 
-.filter-buttons { display: flex; flex-direction: column; gap: .1rem; }
-.filter-buttons button {
-    text-align: left;
-    padding: .3rem 0 .3rem .6rem;
+.epoch-row {
+    display: grid;
+    grid-template-columns: var(--label) 1fr;
+    align-items: center;
+    margin-bottom: .75rem;
+}
+.epoch-label { display: flex; align-items: baseline; gap: .6rem; }
+.epoch-label h2 { margin: 0; }
+.epoch-all {
+    padding: 0;
     border: none;
-    border-left: 2px solid transparent;
     background: none;
-    color: #666;
     font: inherit;
-    font-size: .9rem;
+    font-size: .8rem;
+    color: #888;
     cursor: pointer;
 }
-.filter-buttons button:hover               { color: #1a1a1a; }
-.filter-buttons button[aria-pressed="true"] { color: #1a1a1a; border-left-color: #1a1a1a; }
+.epoch-all[aria-pressed="true"] { color: #1a1a1a; font-weight: 400; text-decoration: underline; }
+
+.epochs { display: flex; flex-wrap: wrap; gap: .4rem; }
+.epoch {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .2rem .6rem;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: #fff;
+    color: #1a1a1a;
+    font: inherit;
+    font-size: .8rem;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+.epoch::before {                                   /* small colour dot = colour of the band */
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--epoch);
+}
+.epoch:hover                { border-color: var(--epoch); }
+.epoch[aria-pressed="true"] { background: var(--epoch); border-color: var(--epoch); color: #fff; }
+.epoch[aria-pressed="true"]::before { background: #fff; }
+
+/* the marked time span of the selected epoch, across all rows */
+.rows { position: relative; }
+.band-layer {
+    position: absolute;
+    inset: 0 0 0 var(--label);
+    pointer-events: none;
+}
+.band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--epoch) 10%, transparent);
+    border-inline: 1px dashed var(--epoch);
+}
+.band span {
+    position: absolute;
+    bottom: .2rem;
+    right: .3rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    color: var(--epoch);
+}
 
 /* ---------- board, axis, rows ---------- */
 
@@ -134,6 +188,130 @@ h1 { font-size: 1.6rem; font-weight: 500; margin-bottom: .25rem; }
 .point:hover .tip, .point:focus-visible .tip { opacity: 1; }
 
 /* ---------- palette ---------- */
+
+/* tabs: one per palette, each is also a drop target */
+.tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .9rem; }
+.tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .7rem;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: #fff;
+    color: #666;
+    font: inherit;
+    font-size: .8rem;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.tab:hover { color: #1a1a1a; border-color: #aaa; }
+.tab[aria-selected="true"] { color: #fff; background: #1a1a1a; border-color: #1a1a1a; }
+.tab.readonly { border-style: dashed; }
+.tab .count {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    opacity: .7;
+}
+.tab:focus-visible { outline: 2px solid #1a1a1a; outline-offset: 2px; }
+
+/* × on a tab: visible on hover, on keyboard focus and on the open tab */
+.tab-wrap { position: relative; display: inline-flex; }
+.tab-close {
+    position: absolute;
+    top: -.45rem;
+    right: -.45rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    background: #fff;
+    color: #666;
+    font: inherit;
+    font-size: .75rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s;
+}
+.tab-wrap:hover .tab-close,
+.tab-wrap:focus-within .tab-close,
+.tab[aria-selected="true"] + .tab-close { opacity: 1; }
+.tab-close:hover { color: #fff; background: #1a1a1a; border-color: #1a1a1a; }
+.tab-close:focus-visible { opacity: 1; outline: 2px solid #1a1a1a; outline-offset: 1px; }
+.tabs.dropping .tab-close { display: none; }        /* not while dragging an artwork */
+
+/* "Palette gelöscht · Rückgängig" */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+    padding: .5rem .9rem;
+    background: #1a1a1a;
+    color: #fff;
+    border-radius: 4px;
+    font-size: .85rem;
+    z-index: 20;
+}
+.toast button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #fff;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* "+" tab and the name field that replaces it while typing */
+.tab.add { padding: .25rem .65rem; font-size: .9rem; line-height: 1; }
+.tabs.dropping .tab.add { display: none; }          /* not a drop target */
+.tab-name {
+    padding: .25rem .7rem;
+    border: 1px solid #1a1a1a;
+    border-radius: 999px;
+    font: inherit;
+    font-size: .8rem;
+    width: 11rem;
+}
+.tab-name:focus-visible { outline: none; box-shadow: 0 0 0 2px #ddd; }
+
+/* while dragging a point: every tab shows it is a target and what dropping there does */
+.tab .drop-hint { display: none; font-size: .7rem; font-style: italic; }
+.tabs.dropping .tab            { border-style: dashed; border-color: #1a1a1a; color: #1a1a1a; background: #fff; }
+.tabs.dropping .tab .drop-hint { display: inline; }
+.tabs.dropping .tab.drag-over  { background: #1a1a1a; color: #fff; }
+
+/* palette "Noch nicht zugeordnet": dashed edge, grey blobs that can be dragged */
+.palette.readonly { border-style: dashed; }
+.palette.readonly .blob { cursor: grab; }
+.palette.readonly .blob:active { cursor: grabbing; }
+
+/* while dragging: the rows and the palette show they accept a drop */
+.point[draggable="true"] { cursor: grab; }
+.palette.dropping  { border-color: #888; }
+.palette.drag-over { border-color: #1a1a1a; background: #fafafa; }
+.rows.dropping .track { background: #fcfcfc; }
+.track.drag-over      { background: #f4f4f4 !important; }
+.drop-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 1px dashed #1a1a1a;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    padding-left: .25rem;
+    color: #1a1a1a;
+    pointer-events: none;
+}
+.note { font-size: .85rem; margin: 0; color: #888; }
 
 .palette {
     position: relative;
