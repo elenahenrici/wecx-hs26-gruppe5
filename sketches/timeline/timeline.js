@@ -12,6 +12,10 @@
  *  - several palettes (e.g. "Ausstellung Louvre") as tabs on top of the palette, a click on a tab opens it.
  *    Each tab is also a drop target: drag a point onto a tab to put it into that palette,
  *    onto "Noch nicht zugeordnet" to take it off the timeline, no matter which palette is open.
+ *  - the palette is a toolbox at the bottom of the screen: collapsed only its top edge shows,
+ *    ▴ (or a click on the empty palette) opens it. The blobs sit on a ring that can be rotated
+ *    (‹ › buttons, mouse wheel, arrow keys). The blob at the top is "in front", its picture and details
+ *    are shown in the middle of the palette.
  *    The "+" tab adds a new, empty palette. The × on a tab (or Delete on a focused tab) removes a palette,
  *    except "Noch nicht zugeordnet". The artworks stay on the timeline, and "Rückgängig" brings it back.
  *    Clicks on the timeline always go into the active palette.
@@ -134,10 +138,22 @@ root.innerHTML = `
     </div>
     <section class="palette" aria-label="Palette">
         <div class="tabs" role="tablist" aria-label="Paletten"></div>
-        <ul class="slots"></ul>
-        <p class="empty">Klick auf einen Punkt in der Timeline, um ein Kunstwerk auszuwählen.</p>
-        <p class="note"></p>
-        <button type="button" class="clear">Alle entfernen</button>
+        <div class="palette-board" tabindex="-1">
+            <ul class="slots"></ul>
+            <button type="button" class="rotate prev" aria-label="Vorheriges Kunstwerk">‹</button>
+            <button type="button" class="rotate next" aria-label="Nächstes Kunstwerk">›</button>
+            <div class="palette-center">
+                <div class="front" hidden>
+                    <img alt="">
+                    <strong></strong>
+                    <span></span>
+                    <button type="button" class="front-remove">Aus Palette entfernen</button>
+                </div>
+                <p class="empty">Klick auf einen Punkt in der Timeline, um ein Kunstwerk auszuwählen.</p>
+                <p class="note"></p>
+                <button type="button" class="clear">Alle entfernen</button>
+            </div>
+        </div>
     </section>
 `;
 const epochBar      = root.querySelector(".epochs");
@@ -151,6 +167,10 @@ const clearButton   = root.querySelector(".clear");
 const paletteEl     = root.querySelector(".palette");
 const tabBar        = root.querySelector(".tabs");
 const note          = root.querySelector(".note");
+const board         = root.querySelector(".palette-board");
+const front         = root.querySelector(".front");
+const prevButton    = root.querySelector(".rotate.prev");
+const nextButton    = root.querySelector(".rotate.next");
 
 // ---------- axis ----------
 
@@ -244,7 +264,13 @@ const renderPoints = (row, artist, rowIndex) => {
         point.dataset.row = String(rowIndex);
         point.setAttribute("aria-label", `${work.label}, ${work.year}, ${artist.label}`);
         point.setAttribute("aria-pressed", String(active.model.isSelected(work.id)));
-        point.innerHTML = `<span class="tip">${work.label} · ${work.year}</span>`;
+        point.innerHTML = `
+            <span class="tip">
+                ${work.pictureUrl ? `<img src="${work.pictureUrl}" alt="" loading="lazy">` : ""}
+                <span>${work.label} · ${work.year}</span>
+            </span>`;
+        const picture = point.querySelector("img");
+        if (picture) picture.onerror = () => picture.remove();   // broken link: show text only
         point.onclick = () => {
             if (!active.editable) { sendBack(work, point); return; }   // "Noch nicht zugeordnet": back to the palette
             const wasSelected = active.model.isSelected(work.id);
@@ -574,27 +600,91 @@ const updateCounts = () => palettes.forEach((p, i) => {
     tabs[i].classList.toggle("readonly", !p.editable);
 });
 
+/**
+ * The blobs sit on the upper edge of the palette, like paint on a real painter's palette.
+ * The palette can be rotated: the blob in front sits at the top (90°), the others fan out
+ * to the left and right. The left side stays free for the thumb hole.
+ */
+const placeOnRing = (item, index, count, frontIndex) => {
+    let offset = index - frontIndex;                                   // how far from the front, -n/2 .. n/2
+    if (offset >  count / 2) offset -= count;
+    if (offset < -count / 2) offset += count;
+    const step    = count > 1 ? Math.min(24, 300 / count) : 0;           // degrees between two blobs
+    const angle   = (90 - offset * step) * Math.PI / 180;               // 90° = top, positive offset = to the right
+    item.style.left = `${50 - 41 * Math.cos(angle)}%`;
+    item.style.top  = `${50 - 36 * Math.sin(angle)}%`;
+    item.classList.toggle("in-front", offset === 0);
+};
+
+/** index of the blob in front, for the open palette (every palette remembers its own) */
+const frontIndex = selected => Math.max(0, selected.findIndex(work => work.id === active.frontId));
+
+/** moves all blobs to their place on the ring and shows the front artwork in the middle */
+const updateRing = () => {
+    const selected = active.model.getSelectedOptions();
+    const index    = frontIndex(selected);
+    [...slots.children].forEach((item, i) => placeOnRing(item, i, selected.length, index));
+
+    const work = selected[index];
+    front.hidden = !work;
+    prevButton.hidden = nextButton.hidden = selected.length < 2;
+    if (!work) return;
+    active.frontId = work.id;
+    const artist = isPlaced(work) ? artistOf(work) : undefined;
+    const img = front.querySelector("img");
+    img.hidden = !work.pictureUrl;
+    if (work.pictureUrl) { img.src = work.pictureUrl; img.onerror = () => img.hidden = true; }
+    front.querySelector("strong").textContent = work.label;
+    front.querySelector("span").textContent =
+        [artist?.label ?? "keine Künstler:in", work.year ?? "Jahr unbekannt"].join(" · ");
+    front.querySelector(".front-remove").hidden = !active.editable;
+};
+
+/** turns the ring by one blob (+1 = next one comes to the front) */
+const rotate = direction => {
+    const selected = active.model.getSelectedOptions();
+    if (selected.length < 2) return;
+    const index = (frontIndex(selected) + direction + selected.length) % selected.length;
+    active.frontId = selected[index].id;
+    updateRing();
+};
+
 const renderPalette = () => {
     const selected = active.model.getSelectedOptions();
-    slots.replaceChildren(...selected.map(work => {
+
+    // an artwork that was just added comes to the front, so it is visible even when the palette is collapsed
+    const ids   = selected.map(work => work.id);
+    const added = active.lastIds ? ids.filter(id => !active.lastIds.includes(id)) : [];
+    if (added.length === 1) active.frontId = added[0];
+    active.lastIds = ids;
+
+    slots.replaceChildren(...selected.map((work, index) => {
         const artist = isPlaced(work) ? artistOf(work) : undefined;   // grey blob while not on the timeline
         const item = document.createElement("li");
         item.dataset.id = work.id;
         item.style.setProperty("--color", artist ? colorOf(artist.id) : "#bbb");
         const details = [artist?.label ?? "keine Künstler:in", work.year ?? "Jahr unbekannt"].join(" · ");
-        const action  = active.editable ? "Klicken zum Entfernen" : "Auf den Zeitstrahl ziehen";
+        const action  = active.editable ? "Klicken: nach vorne, vorne: entfernen" : "Auf den Zeitstrahl ziehen";
         // only a paint blob is visible, the details appear on hover or keyboard focus
         item.innerHTML = `
             <button type="button" class="blob" aria-label="${work.label}, ${details}. ${action}">
                 <span class="dot"></span>
                 <span class="info" aria-hidden="true">
+                    ${work.pictureUrl ? `<img src="${work.pictureUrl}" alt="" loading="lazy">` : ""}
                     <strong>${work.label}</strong>
                     <span>${details}</span>
                     <em>${action}</em>
                 </span>
             </button>`;
+        const picture = item.querySelector("img");
+        if (picture) picture.onerror = () => picture.remove();
         const blob = item.querySelector("button");
-        blob.onclick = () => active.editable ? fallOutOfPalette(item, work.id) : refuse();
+        blob.onclick = event => {
+            event.stopPropagation();                         // not a click on the empty palette
+            if (!isOpen()) setOpen(true);
+            if (active.frontId !== work.id) { active.frontId = work.id; updateRing(); return; }   // bring it to the front
+            active.editable ? fallOutOfPalette(item, work.id) : refuse();                         // already in front
+        };
         if (!active.editable) {                               // "Noch nicht zugeordnet": drag onto the timeline
             blob.draggable = true;
             blob.addEventListener("dragstart", event => {
@@ -613,7 +703,52 @@ const renderPalette = () => {
         ? "Zieh ein Kunstwerk auf die Zeile einer Künstler:in. Die Stelle bestimmt das Jahr. Zurück: Punkt auf diesen Reiter ziehen."
         : "Alle Kunstwerke haben einen Platz auf dem Zeitstrahl. Zurück: Punkt auf diesen Reiter ziehen.";
     clearButton.hidden = selected.length === 0 || !active.editable;
+    updateRing();
 };
+
+// ---------- toolbox: open / close, rotate ----------
+
+const toggleButton = document.createElement("button");
+toggleButton.type = "button";
+toggleButton.className = "tab palette-toggle";
+tabBar.append(toggleButton);
+
+const isOpen  = () => paletteEl.classList.contains("open");
+const setOpen = open => {
+    paletteEl.classList.toggle("open", open);
+    toggleButton.textContent = open ? "▾" : "▴";
+    toggleButton.setAttribute("aria-expanded", String(open));
+    toggleButton.setAttribute("aria-label", open ? "Palette einklappen" : "Palette aufklappen");
+};
+setOpen(false);
+toggleButton.onclick = () => setOpen(!isOpen());
+
+board.addEventListener("click", event => {                  // click on the empty palette = open / close
+    if (event.target === board || event.target === slots) setOpen(!isOpen());
+});
+prevButton.onclick = event => { event.stopPropagation(); rotate(-1); };
+nextButton.onclick = event => { event.stopPropagation(); rotate(+1); };
+front.querySelector(".front-remove").onclick = () => {
+    const item = slots.querySelector(`[data-id="${active.frontId}"]`);
+    if (item) fallOutOfPalette(item, active.frontId);
+};
+
+let lastWheel = 0;
+board.addEventListener("wheel", event => {                   // mouse wheel turns the ring, one blob per notch
+    if (!isOpen()) return;
+    event.preventDefault();
+    if (Date.now() - lastWheel < 180) return;
+    lastWheel = Date.now();
+    rotate(event.deltaY > 0 || event.deltaX > 0 ? 1 : -1);
+}, { passive: false });
+
+board.addEventListener("keydown", event => {
+    if (event.key === "ArrowRight") { event.preventDefault(); rotate(+1); }
+    if (event.key === "ArrowLeft")  { event.preventDefault(); rotate(-1); }
+});
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && isOpen() && document.activeElement?.className !== "tab-name") setOpen(false);
+});
 
 clearButton.onclick = () => active.model.clear();
 
