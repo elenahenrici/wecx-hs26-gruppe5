@@ -1,0 +1,58 @@
+select,
+::picker(select) {
+  appearance: base-select;
+}
+
+select {
+  border: none;
+  background: transparent;
+  padding: 10px;
+  transition: 0.4s;
+}
+
+option {
+  display: flex;
+  justify-content: flex-start;
+  gap: 20px;
+
+  background: var(--clr-bg-half);
+  padding: .3em;
+  margin: .6em;
+  transition: 0.4s;
+
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-small);
+}
+
+option:hover{
+  background: color-mix(var(--clr-accent), transparent);
+}
+
+option:checked {
+  font-weight: bold;
+  background: var(--clr-accent);
+}
+
+option::checkmark {
+  order: 1;
+  margin-left: auto;
+  content: "☑️";
+}
+
+dialog {
+  border: none;
+  height: 70vb;
+  box-shadow:
+    0 0 3em -1em var(--clr-bg-dark),
+    var(--shadow-small)
+;
+  & div {
+    min-height: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto max-content max-content;
+  }
+  &::backdrop {
+    backdrop-filter: blur(2px);
+  }
+}

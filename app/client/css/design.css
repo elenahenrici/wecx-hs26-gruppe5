@@ -86,7 +86,7 @@ button, input[type=submit] {
     box-shadow:       var(--shadow-small);
     font-size:        var(--size-base);
     letter-spacing:   var(--letter-spacing);
-    color:            var(--clr-bg-dark);
+    color:            black;
     font-weight:      500;
 }
 
@@ -103,10 +103,10 @@ button, input[type=submit] {
 }
 
 .selected::after {
-    content: " <";
-    color: var(--clr-accent);
+    content:     " <";
+    color:       var(--clr-accent);
     font-weight: bold;
-    transition: color .5s ease-out;
+    transition:  color .5s ease-out;
     @starting-style {
         color: black;
     }
@@ -114,15 +114,15 @@ button, input[type=submit] {
 
 /* do not show broken images */
 img {
-  position: relative;
+    position: relative;
 }
-img::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: aliceblue;
 
+img::after {
+    content:     '';
+    position:    absolute;
+    inset:       0;
+    display:     grid;
+    place-items: center;
+    background:  aliceblue;
 }
 

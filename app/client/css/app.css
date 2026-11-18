@@ -1,5 +1,6 @@
 @import "layout.css";
 @import "design.css";
+@import "select.css";
 
 body {
     font-family: var(--font-base), system-ui;
@@ -30,7 +31,7 @@ main {
             box-shadow:       var(--shadow-small);
 
             & summary {
-                color:       var(--clr-bg-dark);
+                color:       black;
                 font-weight: bold;
                 min-width:   16ch; /* avoid too much of a jump when all summaries close */
             }

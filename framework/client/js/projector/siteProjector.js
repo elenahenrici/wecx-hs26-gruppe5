@@ -60,7 +60,7 @@ const SiteProjector = siteController => {
         </header>
         <main>        
         </main>        
-        <footer>Version: FW 0.1</footer>        
+        <footer>Version: Workshop Web Experience HS 26</footer>        
         `);
         const [header, main, _footer] = bodyContent;
         header.append(...projectLogin());
