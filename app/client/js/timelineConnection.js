@@ -42,6 +42,20 @@ const UNASSIGNED_COLOR = "#bbb";
 const ARTWORK_YEARS = { "0": 1480, "1": 1485, "2": 1503, "3": 1656, "4": 1642 };
 
 const yearOfArtwork = artwork => artwork.year ?? ARTWORK_YEARS[artwork.id] ?? null;
+
+// One RelationService per relation for the whole page.
+// The DevRelationService counts new ids up from the table size at the moment it is created.
+// A new instance for every save can therefore hand out an id that already exists, and the next
+// removeById then deletes the wrong relation (question 6 for Prof. König). Reusing one instance
+// keeps its counter going up, so every id stays unique.
+const relationServices = new Map();
+const relationServiceFor = (workbenchController, relationId) => {
+    if (!relationServices.has(relationId)) {
+        relationServices.set(relationId, workbenchController.getRelationService(relationId));
+    }
+    return relationServices.get(relationId);
+};
+
 const yearOfDate    = isoDate => isoDate ? Number(String(isoDate).slice(0, 4)) : null;
 const position      = year    => `${((year - START) / (END - START)) * 100}%`;
 
@@ -253,7 +267,7 @@ const projectTimelineConnection = (workbenchController, rel_meta, entityName, en
     const load = () => Promise.all([
             workbenchController.getAllEntities(ARTIST),
             workbenchController.getAllEntities(ARTWORK),
-            workbenchController.getRelationService(rel_meta.relationId).getAll(),
+            relationServiceFor(workbenchController, rel_meta.relationId).getAll(),
         ])
         .then(([allArtists, allArtworks, allRelations]) => {
             artists   = allArtists;
@@ -277,7 +291,7 @@ const projectTimelineConnection = (workbenchController, rel_meta, entityName, en
     divEl.querySelector(".submit").onclick = _evt => {
         submitted = true;
         const selectedIds     = [...selectEl.selectedOptions].map(option => option.value);
-        const relationService = workbenchController.getRelationService(rel_meta.relationId);
+        const relationService = relationServiceFor(workbenchController, rel_meta.relationId);
         relationService
             .getAll()
             .then(allRelations => {
