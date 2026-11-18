@@ -3,6 +3,8 @@ import {defaultProjectors}  from "../../../framework/client/js/projector/default
 import {dom}                from "../../../framework/client/js/util/dom.js";
 import {ONE_TO_MANY}        from "../../../framework/client/js/types.js";
 import {AVATAR_URL}             from "./Constants.js";
+import {ARTIST_ARTWORK}         from "./appTypes.js";
+import {projectTimelineConnection} from "./timelineConnection.js";
 
 export { appProjectors }
 
@@ -10,6 +12,11 @@ const connectorProjector = (workbenchController) => {
 
     const SpecialProjector = (workbenchController) => {
         const projectConnection = (rel_meta, entityName, entity) => {
+            // Gruppe 5: in the workbench of an artist, the artworks are chosen on our timeline with palette
+            if (rel_meta.relationId === ARTIST_ARTWORK && entityName === rel_meta.oneTable) {
+                return projectTimelineConnection(workbenchController, rel_meta, entityName, entity);
+            }
+            // all other relations: default connector (König's select example below stays as reference)
             // if (rel_meta.relationId !== ARTIST_ARTWORK ) {
                 return ConnectorProjector(workbenchController).projectConnection(rel_meta, entityName, entity);
             // }

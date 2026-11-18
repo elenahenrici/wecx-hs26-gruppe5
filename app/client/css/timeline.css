@@ -1,0 +1,260 @@
+/* Gruppe 5: Timeline + Palette in the workbench (ARTIST → ARTWORKS).
+   Same look as the Figma "Timeline v2": white, thin lines, IBM Plex, one pigment colour per artist. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+/* ---------- closed view in the workbench ---------- */
+
+.timeline-select {
+    display:        flex;
+    flex-direction: column;
+    align-items:    start;
+    gap:            var(--dst-pad);
+
+    & .chosen li[data-id] { cursor: pointer; }
+    & .chosen li[data-id]::before {               /* small paint dot in the colour of this artist */
+        content:       "";
+        display:       inline-block;
+        width:         .6em;
+        height:        .6em;
+        margin-right:  .4em;
+        border-radius: 50% 45% 55% 50%;
+        background:    var(--color);
+    }
+    & .chosen li.none { color: #888; }
+}
+
+/* ---------- the dialog ---------- */
+
+dialog.timeline-dialog {
+    width:       min(1100px, 94vw);
+    height:      auto;                             /* select.css sets 70vb for every dialog */
+    max-height:  92vb;
+    padding:     1.5rem 2rem;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    color:       #1a1a1a;
+
+    height:      fit-content;
+    & div { min-height: 0; display: block; }       /* undo the grid that select.css puts on every div in a dialog */
+
+    /* app.css styles every header/footer as the dark page bar: not wanted inside the dialog */
+    & header, & footer {
+        display:       block;
+        padding:       0;
+        background:    none;
+        color:         inherit;
+        text-align:    left;
+    }
+
+    & h3      { margin: 0 0 .25rem; font-size: 1.3rem; font-weight: 500; }
+    & .hint   { margin: 0 0 1rem; max-width: 70ch; color: #666; font-size: .9rem; }
+}
+
+/* ---------- timeline ---------- */
+
+.timeline-dialog .tl-board { --label: 10rem; }
+
+.timeline-dialog .tl-axis {
+    position:      relative;
+    height:        1.5rem;
+    margin-left:   var(--label);
+    border-bottom: 1px solid #ddd;
+}
+.tl-tick {
+    position:    absolute;
+    bottom:      .25rem;
+    transform:   translateX(-50%);
+    font-family: "IBM Plex Mono", monospace;
+    font-size:   .7rem;
+    color:       #888;
+}
+
+.timeline-dialog .tl-row {
+    display:               grid;
+    grid-template-columns: var(--label) 1fr;
+    align-items:           center;
+    min-height:            3.5rem;
+    border-bottom:         1px solid #f0f0f0;
+}
+.timeline-dialog .tl-row.current            { background: #fafafa; }
+.timeline-dialog .tl-row.current strong::after {
+    content:     " · bearbeitest du";
+    font-weight: 400;
+    font-size:   .75rem;
+    color:       #888;
+}
+.timeline-dialog .tl-row.unassigned strong  { color: #888; }
+
+.tl-label strong { display: block; font-size: .9rem; font-weight: 500; }
+.tl-label span   { font-family: "IBM Plex Mono", monospace; font-size: .7rem; color: #888; }
+
+.timeline-dialog .tl-track { position: relative; height: 3.5rem; }
+
+.tl-life {
+    position:      absolute;
+    top:           50%;
+    height:        4px;
+    transform:     translateY(-50%);
+    border-radius: 2px;
+    background:    var(--c);
+    opacity:       .35;
+}
+
+/* ---------- points (buttons, so Tab + Enter/Space work without extra code) ---------- */
+
+.timeline-dialog .tl-point {
+    position:         absolute;
+    top:              50%;
+    width:            14px;
+    height:           14px;
+    padding:          0;
+    transform:        translate(-50%, -50%);
+    border:           2px solid var(--c);
+    border-radius:    50%;
+    background:       #fff;
+    background-image: none;                        /* design.css gives every button a gradient */
+    box-shadow:       none;
+    cursor:           pointer;
+    transition:       transform .15s, background .15s;
+}
+.timeline-dialog .tl-point.unassigned       { border-style: dashed; }
+.timeline-dialog .tl-point.up               { top: calc(50% - 8px); }
+.timeline-dialog .tl-point.down             { top: calc(50% + 8px); }
+.timeline-dialog .tl-point[aria-pressed="true"] { background: var(--color); border-color: var(--color); border-style: solid; }
+.timeline-dialog .tl-point:hover,
+.timeline-dialog .tl-point:focus-visible    { transform: translate(-50%, -50%) scale(1.3); z-index: 2; }
+.timeline-dialog .tl-point:focus-visible    { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 4px #1a1a1a; }
+
+/* artworks without a year: a point with its name at the start of the row */
+.timeline-dialog .tl-noyear {
+    position:  absolute;
+    left:      .5rem;
+    top:       50%;
+    transform: translateY(-50%);
+    display:   flex;
+    gap:       1rem;
+}
+.tl-noyear-item {
+    display:     inline-flex;
+    align-items: center;
+    gap:         .4rem;
+    font-size:   .8rem;
+    color:       #666;
+}
+.timeline-dialog .tl-point.no-year           { position: relative; top: auto; transform: none; }
+.timeline-dialog .tl-point.no-year:hover,
+.timeline-dialog .tl-point.no-year:focus-visible { transform: scale(1.3); }
+
+/* picture on hover, like the tooltip in the sketch */
+.tl-tip {
+    position:       absolute;
+    bottom:         170%;
+    left:           50%;
+    transform:      translateX(-50%);
+    display:        flex;
+    flex-direction: column;
+    gap:            .3rem;
+    padding:        .3rem;
+    border-radius:  2px;
+    background:     #1a1a1a;
+    color:          #fff;
+    font-size:      .75rem;
+    font-weight:    600;
+    white-space:    nowrap;
+    opacity:        0;
+    pointer-events: none;
+    transition:     opacity .15s;
+    z-index:        5;
+}
+.tl-tip img {
+    width:         90px;
+    height:        120px;
+    object-fit:    cover;
+    border-radius: 2px;
+    background:    #333;
+}
+.tl-point:hover .tl-tip,
+.tl-point:focus-visible .tl-tip { opacity: 1; }
+
+/* ---------- palette ---------- */
+
+.timeline-dialog .tl-palette {
+    position:      relative;
+    max-width:     640px;                          /* same width as the palette in the sketch */
+    margin:        1.5rem auto 0;
+    padding:       1.75rem 2.5rem 1.75rem 5rem;
+    min-height:    9rem;
+    border:        1px solid #ccc;
+    border-radius: 55% 45% 50% 50% / 60% 55% 45% 40%;  /* rough painter's palette, like in the sketch */
+    box-shadow:    0 -4px 24px rgba(0, 0, 0, .06);
+}
+.timeline-dialog .tl-palette::before {                /* thumb hole */
+    content:       "";
+    position:      absolute;
+    left:          1.5rem;
+    top:           50%;
+    width:         1.8rem;
+    height:        1.8rem;
+    transform:     translateY(-50%);
+    border:        1px solid #ccc;
+    border-radius: 50%;
+}
+
+.timeline-dialog .tl-blobs {
+    display:   flex;
+    flex-wrap: wrap;
+    gap:       1rem;
+    margin:    0;
+
+    & li       { padding: 0; }
+    & li:hover { background: none; }
+}
+.timeline-dialog .tl-blob {
+    display:          flex;
+    flex-direction:   column;
+    align-items:      center;
+    gap:              .25rem;
+    max-width:        7rem;
+    padding:          0;
+    border:           none;
+    background:       none;
+    background-image: none;
+    box-shadow:       none;
+    font:             inherit;
+    font-size:        .8rem;
+    text-align:       center;
+    cursor:           pointer;
+
+    & .dot {
+        width:         40px;
+        height:        40px;
+        border-radius: 50% 45% 55% 50%;            /* slightly irregular, like a dab of paint */
+        background:    var(--color);
+        transition:    transform .15s;
+    }
+    & small { font-family: "IBM Plex Mono", monospace; font-size: .65rem; color: #888; }
+    &:hover .dot, &:focus-visible .dot { transform: scale(1.12); }
+}
+.timeline-dialog .tl-empty { margin: 0; font-size: .85rem; color: #888; }
+
+/* ---------- footer ---------- */
+
+dialog.timeline-dialog footer {                    /* same specificity as the reset above, but later: wins */
+    display:     flex;
+    align-items: center;
+    gap:         .75rem;
+    margin-top:  1.5rem;
+
+    & .spacer { flex: 1; }
+    & .submit { background: #1a1a1a; background-image: none; color: #fff; border-color: #1a1a1a; }
+    & .clear  {
+        padding:          0;
+        border:           none;
+        background:       none;
+        background-image: none;
+        box-shadow:       none;
+        color:            #666;
+        font-size:        .85rem;
+        text-decoration:  underline;
+        cursor:           pointer;
+    }
+}
