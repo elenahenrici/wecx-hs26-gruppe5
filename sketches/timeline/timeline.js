@@ -67,6 +67,10 @@ const EPOCH_YEARS = {
 };
 const clampYear = year => Math.max(START, Math.min(END, year));
 
+/** German names for the epochs, the course data has them in English (and stays untouched) */
+const EPOCH_NAMES = { Classic: "Klassik", Gothic: "Gotik", Renaissance: "Renaissance", Baroque: "Barock", Impressionism: "Impressionismus" };
+const epochName = epoch => EPOCH_NAMES[epoch.label] ?? epoch.label;
+
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- model ----------
@@ -196,8 +200,8 @@ const epochButtons = shownEpochs.map(epoch => {
     button.className = "epoch";
     button.dataset.epoch = epoch.id;
     button.style.setProperty("--epoch", color);
-    button.textContent = epoch.label;
-    button.title = `${epoch.label}, ca. ${from}–${to}`;
+    button.textContent = epochName(epoch);
+    button.title = `${epochName(epoch)}, ca. ${from}–${to}`;
     button.onclick = () => { activeEpoch = activeEpoch === epoch.id ? null : epoch.id; applyFilter(); }; // again = off
     return button;
 });
